@@ -27,7 +27,7 @@ export class AuthService {
       const accessToken = this.jwtService.sign(payload);
 
       // --- ADD THIS LINE FOR TESTING ---
-      console.log('🔑 Generated JWT Token:', accessToken);
+      // console.log('🔑 Generated JWT Token:', accessToken);
       // --------------------------------
 
       // Return the token as before

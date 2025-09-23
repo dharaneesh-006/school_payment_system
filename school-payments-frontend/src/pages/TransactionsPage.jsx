@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
 import { getTransactions } from "../services/transactionService";
+import { getSchools } from "../services/schoolService";
 import Pagination from "../components/Pagination";
-import MultiSelectDropdown from "../components/MultiSelectDropdown";
 import {
   MagnifyingGlassIcon,
   DocumentDuplicateIcon,
@@ -12,7 +12,7 @@ const STATUS_OPTIONS = ["Success", "Pending", "Failed"];
 
 const TABLE_HEADERS = [
   { key: "sr_no", label: "Sr.No", sortable: false },
-  { key: "school_id", label: "Institute Name", sortable: true },
+  { key: "school_id", label: "School Name", sortable: true },
   { key: "createdAt", label: "Date & Time", sortable: true },
   { key: "custom_order_id", label: "Order ID", sortable: true },
   { key: "collect_id", label: "Edviron Order ID", sortable: true },
@@ -30,6 +30,7 @@ const TABLE_HEADERS = [
 
 export default function TransactionsPage() {
   const [transactions, setTransactions] = useState([]);
+  const [schools, setSchools] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [total, setTotal] = useState(0);
@@ -38,6 +39,7 @@ export default function TransactionsPage() {
 
   const [searchParams, setSearchParams] = useSearchParams();
 
+  // Read all filter values from the URL's query parameters
   const page = useMemo(
     () => parseInt(searchParams.get("page") || "1", 10),
     [searchParams]
@@ -46,7 +48,14 @@ export default function TransactionsPage() {
     () => parseInt(searchParams.get("limit") || "10", 10),
     [searchParams]
   );
-  const status = useMemo(() => searchParams.getAll("status"), [searchParams]);
+  const status = useMemo(
+    () => searchParams.get("status") || "",
+    [searchParams]
+  );
+  const schoolId = useMemo(
+    () => searchParams.get("school_id") || "",
+    [searchParams]
+  );
   const q = useMemo(() => searchParams.get("q") || "", [searchParams]);
   const sortBy = useMemo(
     () => searchParams.get("sort_by") || "createdAt",
@@ -57,6 +66,20 @@ export default function TransactionsPage() {
     [searchParams]
   );
 
+  // Fetch the list of schools for the filter dropdown when the page loads
+  useEffect(() => {
+    const fetchSchools = async () => {
+      try {
+        const schoolList = await getSchools();
+        setSchools(schoolList);
+      } catch (err) {
+        console.error("Failed to fetch schools:", err);
+      }
+    };
+    fetchSchools();
+  }, []);
+
+  // Fetch transactions whenever a filter value (in the dependency array) changes
   useEffect(() => {
     setSearchInput(q);
     const fetchTransactions = async () => {
@@ -66,7 +89,8 @@ export default function TransactionsPage() {
         const params = {
           page,
           limit,
-          status: status.length > 0 ? status : undefined,
+          status: status || undefined,
+          school_id: schoolId || undefined,
           q: q || undefined,
           sort_by: sortBy,
           sort_order: sortOrder,
@@ -84,8 +108,9 @@ export default function TransactionsPage() {
     };
 
     fetchTransactions();
-  }, [page, limit, status, q, sortBy, sortOrder]);
+  }, [page, limit, status, schoolId, q, sortBy, sortOrder]);
 
+  // A utility function to update the URL's query parameters
   const updateParams = useCallback(
     (newParams) => {
       setSearchParams((prev) => {
@@ -118,10 +143,10 @@ export default function TransactionsPage() {
   };
 
   const statusColor = (s) => {
-    switch (s) {
-      case "Success":
+    switch (String(s).toLowerCase()) {
+      case "success":
         return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300";
-      case "Failed":
+      case "failed":
         return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300";
       default:
         return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300";
@@ -130,28 +155,27 @@ export default function TransactionsPage() {
 
   const copyToClipboard = (text) => {
     navigator.clipboard.writeText(text).then(() => {
-      // You can add a toast notification here to show "Copied!"
       alert("OrderID copied to clipboard");
       console.log("Copied to clipboard:", text);
     });
   };
 
   return (
-    <div className="container mx-auto">
+    <div className="container mx-auto p-4 sm:p-6 lg:p-8">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold">History</h1>
+        <h1 className="text-3xl font-bold text-gray-800 dark:text-white">
+          History
+        </h1>
         <button className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700">
           Export
         </button>
       </div>
 
-      {/* Filters */}
       <div className="p-4 bg-white rounded-lg shadow-md mb-6 dark:bg-gray-800">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 items-end">
-          {/* Search */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
           <form
             onSubmit={handleSearchSubmit}
-            className="lg:col-span-2 flex items-center gap-2"
+            className="flex items-center gap-2"
           >
             <div className="w-full">
               <label htmlFor="search" className="sr-only">
@@ -174,20 +198,42 @@ export default function TransactionsPage() {
             </button>
           </form>
 
-          {/* Status Dropdown */}
           <div>
-            <label className="block text-sm font-medium mb-1">Status</label>
-            <MultiSelectDropdown
-              options={STATUS_OPTIONS}
-              selectedValues={status}
-              onChange={(newStatus) =>
-                updateParams({ status: newStatus, page: "1" })
+            <label className="block text-sm font-medium mb-1">School</label>
+            <select
+              value={schoolId}
+              onChange={(e) =>
+                updateParams({ school_id: e.target.value, page: "1" })
               }
-              placeholder="All Statuses"
-            />
+              className="w-full border rounded-md p-2 dark:bg-gray-700 dark:border-gray-600"
+            >
+              <option value="">All Schools</option>
+              {schools.map((school) => (
+                <option key={school._id} value={school._id}>
+                  {school.name}
+                </option>
+              ))}
+            </select>
           </div>
 
-          {/* Rows Per Page */}
+          <div>
+            <label className="block text-sm font-medium mb-1">Status</label>
+            <select
+              value={status}
+              onChange={(e) =>
+                updateParams({ status: e.target.value, page: "1" })
+              }
+              className="w-full border rounded-md p-2 dark:bg-gray-700 dark:border-gray-600"
+            >
+              <option value="">All Statuses</option>
+              {STATUS_OPTIONS.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
+          </div>
+
           <div>
             <label className="block text-sm font-medium mb-1">
               Rows per page
@@ -209,7 +255,6 @@ export default function TransactionsPage() {
         </div>
       </div>
 
-      {/* Table */}
       <div className="bg-white rounded-lg shadow-md overflow-hidden dark:bg-gray-800">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
@@ -220,14 +265,16 @@ export default function TransactionsPage() {
                     key={header.key}
                     scope="col"
                     onClick={() => handleSort(header.key)}
-                    className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${
-                      header.sortable ? "cursor-pointer" : ""
+                    className={`px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider ${
+                      header.sortable
+                        ? "cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600"
+                        : ""
                     }`}
                   >
                     <div className="flex items-center">
                       {header.label}
                       {sortBy === header.key && (
-                        <span className="ml-1 ">
+                        <span className="ml-1">
                           {sortOrder === "asc" ? "↑" : "↓"}
                         </span>
                       )}
@@ -270,22 +317,21 @@ export default function TransactionsPage() {
                     key={tx.collect_id}
                     className="hover:bg-gray-50 dark:hover:bg-gray-700"
                   >
-                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-200">
                       {(page - 1) * limit + index + 1}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                       {tx.school_id || "N/A"}
                     </td>
-                    {/* NOTE: Add 'createdAt' to your backend response for this to work */}
-                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                       {tx.createdAt
                         ? new Date(tx.createdAt).toLocaleString()
                         : "N/A"}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                       {tx.custom_order_id || "N/A"}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                       <div className="flex items-center gap-2">
                         {tx.collect_id || "N/A"}
                         <DocumentDuplicateIcon
@@ -294,14 +340,14 @@ export default function TransactionsPage() {
                         />
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900 dark:text-white">
                       ₹{tx.order_amount?.toLocaleString() || "0"}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900 dark:text-white">
                       ₹{tx.transaction_amount?.toLocaleString() || "0"}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      N/A
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                      {tx.payment_method || "N/A"}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
                       <span
@@ -312,23 +358,22 @@ export default function TransactionsPage() {
                         {tx.status || "Pending"}
                       </span>
                     </td>
-                    {/* NOTE: The following fields are placeholders as they are not in the current API response */}
-                    <td className="px-6 py-4 whitespace-nowrap text-sm">
-                      s123456
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                      {tx.student_id || "N/A"}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm">
-                      test name
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                      {tx.student_name || "N/A"}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm">
-                      0000000000
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                      {tx.phone_no || "N/A"}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                       N/A
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                       {tx.gateway || "N/A"}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                       N/A
                     </td>
                   </tr>
@@ -338,8 +383,8 @@ export default function TransactionsPage() {
           </table>
         </div>
         {transactions.length > 0 && (
-          <div className="p-4 border-t dark:border-gray-700 flex justify-between items-center">
-            <span className="text-sm">
+          <div className="p-4 border-t border-gray-200 dark:border-gray-700 flex justify-between items-center">
+            <span className="text-sm text-gray-600 dark:text-gray-400">
               Showing {(page - 1) * limit + 1} to{" "}
               {Math.min(page * limit, total)} of {total} results
             </span>

@@ -2,21 +2,10 @@ import React, { createContext, useState, useEffect, useContext } from "react";
 
 const ThemeContext = createContext();
 
-// Function to get the initial theme
 const getInitialTheme = () => {
-  // 1. Check for a saved theme in localStorage
   const storedTheme = localStorage.getItem("theme");
-  if (storedTheme) {
-    return storedTheme;
-  }
-  // 2. If no saved theme, check the user's system preference
-  if (
-    window.matchMedia &&
-    window.matchMedia("(prefers-color-scheme: dark)").matches
-  ) {
-    return "dark";
-  }
-  // 3. Default to 'light'
+  if (storedTheme) return storedTheme;
+  if (window.matchMedia("(prefers-color-scheme: dark)").matches) return "dark";
   return "light";
 };
 
@@ -29,13 +18,13 @@ export function ThemeProvider({ children }) {
       root.classList.add("dark");
     } else {
       root.classList.remove("dark");
+      root.classList.add("light");
     }
     localStorage.setItem("theme", theme);
   }, [theme]);
 
-  const toggleTheme = () => {
-    setTheme((prevTheme) => (prevTheme === "light" ? "dark" : "light"));
-  };
+  const toggleTheme = () =>
+    setTheme((prev) => (prev === "light" ? "dark" : "light"));
 
   return (
     <ThemeContext.Provider value={{ theme, toggleTheme }}>

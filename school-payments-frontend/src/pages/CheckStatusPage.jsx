@@ -24,8 +24,8 @@ export default function CheckStatusPage() {
 
   return (
     <div className="container mx-auto max-w-2xl">
-      <h1 className="text-3xl font-bold mb-6">Check Transaction Status</h1>
       <div className="p-6 bg-white rounded-lg shadow-md dark:bg-gray-800">
+        <h1 className="text-3xl font-bold mb-6">Check Transaction Status</h1>
         <form onSubmit={handleSubmit}>
           <label className="block text-sm font-medium mb-1">
             Custom Order ID

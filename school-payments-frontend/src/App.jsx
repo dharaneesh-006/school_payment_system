@@ -7,13 +7,11 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
 import TransactionsPage from "./pages/TransactionsPage";
-import SchoolTransactionsPage from "./pages/SchoolTransactionsPage";
 import CheckStatusPage from "./pages/CheckStatusPage";
 
 function App() {
   return (
-    // FIX: Removed specific background colors to allow body background to show
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-transparent">
       <Header />
       <main className="p-4 sm:p-6 md:p-8">
         <Routes>
@@ -31,14 +29,7 @@ function App() {
               </ProtectedRoute>
             }
           />
-          <Route
-            path="/by-school"
-            element={
-              <ProtectedRoute>
-                <SchoolTransactionsPage />
-              </ProtectedRoute>
-            }
-          />
+        
           <Route
             path="/check-status"
             element={

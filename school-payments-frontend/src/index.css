@@ -1,6 +1,13 @@
 @import "tailwindcss";
-@layer base {
-    body {
-        @apply bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-200 transition-colors duration-300;
-    }
+
+/* Light mode styles */
+body {
+    background-color: rgb(107 114 128 / 0.5); /* Tailwind gray-500 with 50% opacity */
+    color: #fff; /* white text */
+}
+
+/* Dark mode styles */
+html.dark body {
+    background-color: #111827; /* slate-900 */
+    color: #fff; /* white text */
 }

@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, InternalServerErrorException } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Aggregate } from 'mongoose';
 import { ConfigService } from '@nestjs/config';
@@ -9,7 +9,7 @@ import { Order, OrderDocument } from '../schemas/order.schema';
 import { OrderStatus, OrderStatusDocument } from '../schemas/order-status.schema';
 import { WebhookLog, WebhookLogDocument } from '../schemas/webhook-log.schema';
 
-// --- (Interfaces from previous fix remain the same) ---
+// Interfaces for pagination
 interface SimpleAggregatePaginateResult<T> {
   docs: T[];
   totalDocs: number;
@@ -34,7 +34,6 @@ type OrderStatusModelWithPagination = Model<OrderStatusDocument> & {
   ): Promise<SimpleAggregatePaginateResult<OrderStatusDocument>>;
 };
 
-
 @Injectable()
 export class TransactionsService {
   private readonly pgKey: string;
@@ -53,7 +52,6 @@ export class TransactionsService {
     this.schoolId = this.configService.get<string>('SCHOOL_ID')!;
   }
 
-  // ... (createPayment and handleWebhook methods remain the same) ...
   async createPayment(paymentDto: any): Promise<{ redirectUrl: string }> {
     const custom_order_id = `ORD-${Date.now()}`;
 
@@ -65,6 +63,7 @@ export class TransactionsService {
         name: paymentDto.name,
         id: paymentDto.studentId,
         email: paymentDto.email,
+        phone: paymentDto.phone, // Save the phone number
       },
       gateway_name: 'Easebuzz', 
     });
@@ -137,44 +136,31 @@ export class TransactionsService {
     );
   }
 
-  /**
-   * 3. API ENDPOINTS - MODIFIED
-   */
+  // src/transactions/transactions.service.ts
+
   async findAll(params: any): Promise<any> {
-    // MODIFIED: Destructure status and q from the params
-    const { page = 1, limit = 10, sort_by, sort_order, to, status, q } = params;
+    const { page = 1, limit = 10, sort_by, sort_order, status, school_id, q } = params;
 
     const pipeline: any[] = [];
     
-    // NEW: Build a dynamic match stage for filters
-    const matchStage: any = {};
+    // This stage filters documents *before* the expensive join operation
+    const preLookupMatchStage: any = {};
 
+    // --- THIS IS THE CORRECTED LOGIC ---
     if (status && status.length > 0) {
-      // Use $in to match any status in the provided array
-      matchStage.status = { $in: Array.isArray(status) ? status : [status] };
+      const statusArray = Array.isArray(status) ? status : [status];
+      // Build an $or query to match any of the statuses case-insensitively
+      preLookupMatchStage.$or = statusArray.map(s => ({
+        status: { $regex: s, $options: 'i' }
+      }));
     }
+    // ------------------------------------
 
-    if (to) {
-      matchStage.createdAt = { $lte: new Date(to) };
+    if (Object.keys(preLookupMatchStage).length > 0) {
+      pipeline.push({ $match: preLookupMatchStage });
     }
     
-    // NEW: Add a search filter for the query 'q'
-    if (q) {
-      // Use $or to search across multiple fields with a case-insensitive regex
-      matchStage.$or = [
-        { collect_id: { $regex: q, $options: 'i' } },
-        { custom_order_id: { $regex: q, $options: 'i' } },
-        // Add other fields you want to search here, like school_id
-        // Note: The fields below must come from the 'orders' collection after the $lookup
-      ];
-    }
-
-    // NEW: If any filters exist, add the match stage to the pipeline first for performance
-    if (Object.keys(matchStage).length > 0) {
-      pipeline.push({ $match: matchStage });
-    }
-    
-    // Main aggregation logic (unchanged)
+    // Join with the 'orders' collection
     pipeline.push(
       {
         $lookup: {
@@ -185,7 +171,6 @@ export class TransactionsService {
         },
       },
       { $unwind: '$order_details' },
-      // MODIFIED: Project 'createdAt' for sorting and display
       {
         $project: {
           _id: 0,
@@ -196,11 +181,32 @@ export class TransactionsService {
           transaction_amount: '$transaction_amount',
           status: '$status',
           custom_order_id: '$collect_id',
-          createdAt: '$createdAt', // <-- Add this line
+          createdAt: '$createdAt',
+          payment_method: '$payment_mode',
+          student_name: '$order_details.student_info.name',
+          student_id: '$order_details.student_info.id',
+          phone_no: '$order_details.student_info.phone',
         },
       },
     );
-      
+
+    // This stage filters on fields that only exist *after* the join
+    const postLookupMatchStage: any = {};
+    if (school_id) {
+        postLookupMatchStage.school_id = school_id;
+    }
+    if (q) {
+        postLookupMatchStage.$or = [
+            { collect_id: { $regex: q, $options: 'i' } },
+            { custom_order_id: { $regex: q, $options: 'i' } },
+            { student_name: { $regex: q, $options: 'i' } },
+            { student_id: { $regex: q, $options: 'i' } },
+        ];
+    }
+    if (Object.keys(postLookupMatchStage).length > 0) {
+        pipeline.push({ $match: postLookupMatchStage });
+    }
+        
     if (sort_by) {
         pipeline.push({
             $sort: { [sort_by]: sort_order === 'desc' ? -1 : 1 }
@@ -222,7 +228,6 @@ export class TransactionsService {
     };
   }
 
-  // ... (findBySchool and checkStatus methods remain the same) ...
   async findBySchool(schoolId: string): Promise<any> {
     const pipeline = [
       {
@@ -258,4 +263,3 @@ export class TransactionsService {
     return status;
   }
 }
-

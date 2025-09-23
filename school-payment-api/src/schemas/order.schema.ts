@@ -17,6 +17,7 @@ export class Order {
     name: string;
     id: string;
     email: string;
+    phone: string; // Added this line
   };
   
   @Prop()
