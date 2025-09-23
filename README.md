@@ -58,7 +58,7 @@ cd school_payment_system
 ### 2. Setup Backend
 
 ```bash
-cd backend
+cd school-payment-api
 npm install   # or yarn install
 cp .env.example .env
 ```
@@ -78,7 +78,7 @@ The backend will start at **[http://localhost:4000](http://localhost:4000)**.
 Open a new terminal:
 
 ```bash
-cd frontend
+cd school-payment-frontend
 npm install   # or yarn install
 cp .env.example .env.local
 ```
