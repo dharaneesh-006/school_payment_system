@@ -29,4 +29,8 @@ async function bootstrap() {
   await app.listen(process.env.PORT || 4000); 
 }
 
+<<<<<<< HEAD
 bootstrap();
+=======
+bootstrap();
+>>>>>>> 7533f3742fe08adb5d92dbc520fcb1df8231ad29
