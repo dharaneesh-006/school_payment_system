@@ -143,6 +143,9 @@ VITE_API_BASE_URL=http://localhost:4000/api
 ### Dashboard
 ![Dashboard](./screenshots/dashboard.png)
 
+### Check Status Page
+![Check Status](./screenshots/checkstatus.png)
+
 ## 🧪 Testing with Postman
 
 * Import the provided Postman collection: `/postman/SchoolPayments.postman_collection.json`
