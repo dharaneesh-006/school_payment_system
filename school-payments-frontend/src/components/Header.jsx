@@ -6,23 +6,22 @@ import {
   SunIcon,
   MoonIcon,
   ArrowRightOnRectangleIcon,
-  Bars3Icon, // Burger icon
-  XMarkIcon, // Close icon
+  Bars3Icon, 
+  XMarkIcon, 
 } from "@heroicons/react/24/outline";
 
 export default function Header() {
   const { theme, toggleTheme } = useTheme();
   const { isAuthenticated, logout } = useAuth();
   const location = useLocation();
-  const [isMenuOpen, setIsMenuOpen] = useState(false); // State to manage mobile menu visibility
+  const [isMenuOpen, setIsMenuOpen] = useState(false); 
 
-  // Reusable navigation items
   const navItems = [
     { path: "/transactions", label: "Transactions" },
     { path: "/check-status", label: "Check Status" },
   ];
 
-  // Styling for desktop navigation links
+
   const navLinkClass = (path) =>
     `px-3 py-2 rounded-md text-sm font-medium transition-colors ${
       location.pathname === path
@@ -30,7 +29,7 @@ export default function Header() {
         : "text-gray-500 dark:text-slate-300 hover:bg-gray-200 dark:hover:bg-slate-700"
     }`;
 
-  // Styling for mobile navigation links
+
   const mobileNavLinkClass = (path) =>
     `block px-3 py-2 rounded-md text-base font-medium transition-colors ${
       location.pathname === path
@@ -39,7 +38,7 @@ export default function Header() {
     }`;
 
   return (
-    // Add 'relative' to allow absolute positioning of the dropdown
+
     <header className="bg-white dark:bg-slate-800 shadow-md sticky top-0 left-0 w-full z-20">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
@@ -47,7 +46,7 @@ export default function Header() {
             <Link
               to="/"
               className="text-xl font-bold text-blue-600 dark:text-blue-400"
-              onClick={() => setIsMenuOpen(false)} // Close menu on logo click
+              onClick={() => setIsMenuOpen(false)} 
             >
               SchoolPayments
             </Link>
@@ -118,7 +117,7 @@ export default function Header() {
                 key={item.path}
                 to={item.path}
                 className={mobileNavLinkClass(item.path)}
-                onClick={() => setIsMenuOpen(false)} // Close menu on link click
+                onClick={() => setIsMenuOpen(false)} 
               >
                 {item.label}
               </Link>

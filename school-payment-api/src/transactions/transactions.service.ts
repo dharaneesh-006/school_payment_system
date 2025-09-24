@@ -10,7 +10,7 @@ import { OrderStatus, OrderStatusDocument } from '../schemas/order-status.schema
 import { WebhookLog, WebhookLogDocument } from '../schemas/webhook-log.schema';
 import { TransactionsGateway } from './transactions.gateway';
 
-// Interfaces for Mongoose pagination plugin
+
 interface SimpleAggregatePaginateResult<T> {
   docs: T[];
   totalDocs: number;
@@ -49,7 +49,7 @@ export class TransactionsService {
     private webhookLogModel: Model<WebhookLogDocument>,
     private readonly configService: ConfigService,
     private readonly httpService: HttpService,
-    private readonly transactionsGateway: TransactionsGateway, // Injected for real-time updates
+    private readonly transactionsGateway: TransactionsGateway,
   ) {
     this.pgKey = this.configService.get<string>('PG_KEY')!;
     this.pgApiKey = this.configService.get<string>('PG_API_KEY')!;
@@ -80,7 +80,6 @@ export class TransactionsService {
     });
     await newOrderStatus.save();
 
-    // Notify connected clients that a new transaction has been added
     this.transactionsGateway.sendUpdate();
 
     const payload = {
@@ -109,7 +108,7 @@ export class TransactionsService {
       }
       return { redirectUrl: response.data.payment_page_url };
     } catch (error) {
-      console.warn(`⚠️ Payment Gateway is unavailable. Falling back to mock payment flow. Error: ${error.message}`);
+      console.warn(`Payment Gateway is unavailable. Falling back to mock payment flow. Error: ${error.message}`);
       await this.orderModel.findOneAndUpdate(
           { custom_order_id },
           { $set: { gateway_name: 'Mock Gateway (Offline)' } },
@@ -141,7 +140,7 @@ export class TransactionsService {
       },
       { new: true },
     );
-    // Notify connected clients that a transaction's status has been updated
+
     this.transactionsGateway.sendUpdate();
   }
 

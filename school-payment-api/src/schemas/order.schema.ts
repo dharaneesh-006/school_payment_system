@@ -4,7 +4,7 @@ import { HydratedDocument } from 'mongoose';
 @Schema({ timestamps: true })
 export class Order {
   @Prop({ required: true, unique: true })
-  custom_order_id: string; // This will link to OrderStatus.collect_id
+  custom_order_id: string;
 
   @Prop({ required: true })
   school_id: string;
@@ -17,7 +17,7 @@ export class Order {
     name: string;
     id: string;
     email: string;
-    phone: string; // Added this line
+    phone: string;
   };
   
   @Prop()

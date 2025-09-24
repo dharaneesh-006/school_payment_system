@@ -1,13 +1,11 @@
 @import "tailwindcss";
 
-/* Light mode styles */
 body {
-    background-color: rgb(107 114 128 / 0.5); /* Tailwind gray-500 with 50% opacity */
-    color: #fff; /* white text */
+    background-color: rgb(107 114 128 / 0.5);
+    color: #fff;
 }
 
-/* Dark mode styles */
 html.dark body {
-    background-color: #111827; /* slate-900 */
-    color: #fff; /* white text */
+    background-color: #111827; 
+    color: #fff;
 }

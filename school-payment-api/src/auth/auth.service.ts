@@ -23,14 +23,11 @@ export class AuthService {
     if (user && (await bcrypt.compare(pass, user.password_hash))) {
       const payload = { sub: user._id, email: user.email };
       
-      // Store the token in a variable
+
       const accessToken = this.jwtService.sign(payload);
 
-      // --- ADD THIS LINE FOR TESTING ---
       // console.log('🔑 Generated JWT Token:', accessToken);
-      // --------------------------------
-
-      // Return the token as before
+      
       return {
         access_token: accessToken,
       };

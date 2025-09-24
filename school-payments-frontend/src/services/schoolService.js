@@ -6,6 +6,6 @@ export const getSchools = async () => {
 };
 
 export const addSchool = async (schoolData) => {
-    const response = await api.post('/schools', schoolData); // Assumes a POST /schools endpoint
+    const response = await api.post('/schools', schoolData); 
     return response.data;
 }

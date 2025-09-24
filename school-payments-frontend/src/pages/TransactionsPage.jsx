@@ -8,7 +8,7 @@ import {
   DocumentDuplicateIcon,
 } from "@heroicons/react/24/outline";
 import * as XLSX from "xlsx";
-import io from "socket.io-client"; // For real-time updates
+import io from "socket.io-client"; 
 
 const STATUS_OPTIONS = ["Success", "Pending", "Failed"];
 
@@ -41,7 +41,6 @@ export default function TransactionsPage() {
 
   const [searchParams, setSearchParams] = useSearchParams();
 
-  // Memoized values from URL for performance
   const page = useMemo(
     () => parseInt(searchParams.get("page") || "1", 10),
     [searchParams]
@@ -68,7 +67,6 @@ export default function TransactionsPage() {
     [searchParams]
   );
 
-  // Effect to fetch static data for filters
   useEffect(() => {
     const fetchSchools = async () => {
       try {
@@ -81,7 +79,7 @@ export default function TransactionsPage() {
     fetchSchools();
   }, []);
 
-  // Memoized function to fetch transaction data
+
   const fetchTransactions = useCallback(async () => {
     setError("");
     try {
@@ -103,25 +101,24 @@ export default function TransactionsPage() {
     }
   }, [searchParams]);
 
-  // Effect for user-driven fetches (e.g., changing filters)
+
   useEffect(() => {
     setSearchInput(searchParams.get("q") || "");
     setLoading(true);
     fetchTransactions().finally(() => setLoading(false));
   }, [searchParams, fetchTransactions]);
 
-  // Effect for handling real-time WebSocket updates
   useEffect(() => {
     const socketURL = import.meta.env.VITE_API_BASE_URL.replace("/api", "");
     const socket = io(socketURL);
 
     socket.on("connect", () => {
-      console.log(`✅ Real-time connection established.`);
+      console.log(`Real-time connection established.`);
     });
 
     socket.on("transactionsUpdated", () => {
       console.log("📢 Real-time update received! Refreshing data...");
-      fetchTransactions(); // Re-fetch without showing loading spinner
+      fetchTransactions(); 
     });
 
     socket.on("disconnect", () => {
@@ -362,7 +359,7 @@ export default function TransactionsPage() {
                 transactions.map((tx, index) => (
                   <tr
                     key={tx.collect_id}
-                    className="hover:bg-gray-50 dark:hover:bg-gray-700"
+                    className="hover:bg-gray-50 dark:hover:bg-gray-700 hover:scale-[1.01] transition duration-300 ease-in-out "
                   >
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-200">
                       {(page - 1) * limit + index + 1}

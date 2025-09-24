@@ -8,7 +8,6 @@ export class SchoolsService {
   constructor(@InjectModel(School.name) private schoolModel: Model<SchoolDocument>) {}
 
   async onModuleInit() {
-    // Populate with dummy data if collection is empty
     const count = await this.schoolModel.countDocuments().exec();
     if (count === 0) {
       await this.schoolModel.create([

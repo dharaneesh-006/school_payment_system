@@ -7,7 +7,7 @@ import * as Joi from 'joi';
 import { AuthModule } from './auth/auth.module';
 import { TransactionsModule } from './transactions/transactions.module';
 import { SchoolsModule } from './schools/schools.module';
-import { DatabaseService } from './database.service'; // <-- 1. Import the new service
+import { DatabaseService } from './database.service'; 
 
 @Module({
   imports: [
@@ -33,6 +33,6 @@ import { DatabaseService } from './database.service'; // <-- 1. Import the new s
     SchoolsModule,
   ],
   controllers: [],
-  providers: [DatabaseService], // <-- 2. Add the service to providers
+  providers: [DatabaseService], 
 })
 export class AppModule {}

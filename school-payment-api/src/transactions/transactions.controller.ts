@@ -29,7 +29,6 @@ export class TransactionsController {
     return this.transactionsService.findBySchool(schoolId);
   }
 
-  // Matches the frontend's API call in services/transactions.js
   @UseGuards(AuthGuard('jwt'))
   @Get('check-status')
   checkStatus(@Query('custom_order_id') customOrderId: string) {

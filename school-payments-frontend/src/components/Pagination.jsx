@@ -14,7 +14,7 @@ export default function Pagination({ currentPage, totalPages, onPageChange }) {
   };
 
   return (
-    // UPDATED: Added responsive flex classes and gap
+
     <div className="flex flex-col sm:flex-row items-center gap-4 mt-4 sm:mt-0">
       <span className="text-sm text-gray-600 dark:text-gray-400">
         Page {currentPage} of {totalPages}

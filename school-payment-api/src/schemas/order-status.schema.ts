@@ -6,7 +6,7 @@ import aggregatePaginate = require('mongoose-aggregate-paginate-v2');
 @Schema({ timestamps: true })
 export class OrderStatus {
   @Prop({ required: true, unique: true })
-  collect_id: string; // Same as custom_order_id from Order
+  collect_id: string; 
 
   @Prop()
   order_amount: number;

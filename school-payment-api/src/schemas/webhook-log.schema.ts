@@ -1,7 +1,7 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument } from 'mongoose';
 
-@Schema({ timestamps: true, strict: false }) // strict: false to accept any payload shape
+@Schema({ timestamps: true, strict: false }) 
 export class WebhookLog {}
 
 export const WebhookLogSchema = SchemaFactory.createForClass(WebhookLog);

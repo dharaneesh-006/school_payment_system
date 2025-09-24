@@ -2,8 +2,6 @@ import React from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import Header from "./components/Header";
 import ProtectedRoute from "./components/ProtectedRoute";
-
-// Page Imports
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
 import TransactionsPage from "./pages/TransactionsPage";
@@ -39,7 +37,6 @@ function App() {
             }
           />
 
-          {/* Fallback Route */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>
