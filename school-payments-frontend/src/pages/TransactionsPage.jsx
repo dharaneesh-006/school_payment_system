@@ -7,6 +7,8 @@ import {
   MagnifyingGlassIcon,
   DocumentDuplicateIcon,
 } from "@heroicons/react/24/outline";
+import * as XLSX from "xlsx";
+import io from "socket.io-client"; // For real-time updates
 
 const STATUS_OPTIONS = ["Success", "Pending", "Failed"];
 
@@ -39,7 +41,7 @@ export default function TransactionsPage() {
 
   const [searchParams, setSearchParams] = useSearchParams();
 
-  // Read all filter values from the URL's query parameters
+  // Memoized values from URL for performance
   const page = useMemo(
     () => parseInt(searchParams.get("page") || "1", 10),
     [searchParams]
@@ -66,7 +68,7 @@ export default function TransactionsPage() {
     [searchParams]
   );
 
-  // Fetch the list of schools for the filter dropdown when the page loads
+  // Effect to fetch static data for filters
   useEffect(() => {
     const fetchSchools = async () => {
       try {
@@ -79,47 +81,64 @@ export default function TransactionsPage() {
     fetchSchools();
   }, []);
 
-  // Fetch transactions whenever a filter value (in the dependency array) changes
+  // Memoized function to fetch transaction data
+  const fetchTransactions = useCallback(async () => {
+    setError("");
+    try {
+      const params = {
+        page: parseInt(searchParams.get("page") || "1", 10),
+        limit: parseInt(searchParams.get("limit") || "10", 10),
+        status: searchParams.get("status") || undefined,
+        school_id: searchParams.get("school_id") || undefined,
+        q: searchParams.get("q") || undefined,
+        sort_by: searchParams.get("sort_by") || "createdAt",
+        sort_order: searchParams.get("sort_order") || "desc",
+      };
+      const response = await getTransactions(params);
+      setTransactions(response.data);
+      setTotal(response.total);
+      setTotalPages(Math.ceil(response.total / response.limit));
+    } catch (err) {
+      setError("Failed to fetch transactions.");
+    }
+  }, [searchParams]);
+
+  // Effect for user-driven fetches (e.g., changing filters)
   useEffect(() => {
-    setSearchInput(q);
-    const fetchTransactions = async () => {
-      setLoading(true);
-      setError("");
-      try {
-        const params = {
-          page,
-          limit,
-          status: status || undefined,
-          school_id: schoolId || undefined,
-          q: q || undefined,
-          sort_by: sortBy,
-          sort_order: sortOrder,
-        };
-        const response = await getTransactions(params);
-        setTransactions(response.data);
-        setTotal(response.total);
-        setTotalPages(Math.ceil(response.total / response.limit));
-      } catch (err) {
-        setError("Failed to fetch transactions.");
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
+    setSearchInput(searchParams.get("q") || "");
+    setLoading(true);
+    fetchTransactions().finally(() => setLoading(false));
+  }, [searchParams, fetchTransactions]);
+
+  // Effect for handling real-time WebSocket updates
+  useEffect(() => {
+    const socketURL = import.meta.env.VITE_API_BASE_URL.replace("/api", "");
+    const socket = io(socketURL);
+
+    socket.on("connect", () => {
+      console.log(`✅ Real-time connection established.`);
+    });
+
+    socket.on("transactionsUpdated", () => {
+      console.log("📢 Real-time update received! Refreshing data...");
+      fetchTransactions(); // Re-fetch without showing loading spinner
+    });
+
+    socket.on("disconnect", () => {
+      console.log("❌ Real-time connection lost.");
+    });
+
+    return () => {
+      socket.disconnect();
     };
+  }, [fetchTransactions]);
 
-    fetchTransactions();
-  }, [page, limit, status, schoolId, q, sortBy, sortOrder]);
-
-  // A utility function to update the URL's query parameters
   const updateParams = useCallback(
     (newParams) => {
       setSearchParams((prev) => {
         for (const key in newParams) {
           if (newParams[key] === undefined || newParams[key] === "") {
             prev.delete(key);
-          } else if (Array.isArray(newParams[key])) {
-            prev.delete(key);
-            newParams[key].forEach((val) => prev.append(key, val));
           } else {
             prev.set(key, newParams[key]);
           }
@@ -156,8 +175,32 @@ export default function TransactionsPage() {
   const copyToClipboard = (text) => {
     navigator.clipboard.writeText(text).then(() => {
       alert("OrderID copied to clipboard");
-      console.log("Copied to clipboard:", text);
     });
+  };
+
+  const handleExport = () => {
+    const exportData = transactions.map((tx, index) => ({
+      "Sr.No": (page - 1) * limit + index + 1,
+      "School Name": tx.school_id,
+      "Date & Time": tx.createdAt
+        ? new Date(tx.createdAt).toLocaleString()
+        : "N/A",
+      "Order ID": tx.custom_order_id,
+      "Edviron Order ID": tx.collect_id,
+      "Order Amt": tx.order_amount,
+      "Transaction Amt": tx.transaction_amount,
+      "Payment Method": tx.payment_method,
+      Status: tx.status,
+      "Student ID": tx.student_id,
+      "Student Name": tx.student_name,
+      "Phone No.": tx.phone_no,
+      Gateway: tx.gateway,
+    }));
+    const worksheet = XLSX.utils.json_to_sheet(exportData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Transactions");
+    const date = new Date().toISOString().slice(0, 10);
+    XLSX.writeFile(workbook, `Transactions_Export_${date}.xlsx`);
   };
 
   return (
@@ -166,7 +209,11 @@ export default function TransactionsPage() {
         <h1 className="text-3xl font-bold text-gray-800 dark:text-white">
           History
         </h1>
-        <button className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700">
+        <button
+          onClick={handleExport}
+          disabled={transactions.length === 0}
+          className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+        >
           Export
         </button>
       </div>
@@ -186,7 +233,7 @@ export default function TransactionsPage() {
                 type="text"
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
-                placeholder="Search(Order ID...)"
+                placeholder="Search by ID, Student Name..."
                 className="w-full border rounded-md p-2 dark:bg-gray-700 dark:border-gray-600"
               />
             </div>
@@ -383,7 +430,7 @@ export default function TransactionsPage() {
           </table>
         </div>
         {transactions.length > 0 && (
-          <div className="p-4 border-t border-gray-200 dark:border-gray-700 flex justify-between items-center">
+          <div className="p-4 border-t border-gray-200 dark:border-gray-700 flex flex-col sm:flex-row justify-between items-center gap-4">
             <span className="text-sm text-gray-600 dark:text-gray-400">
               Showing {(page - 1) * limit + 1} to{" "}
               {Math.min(page * limit, total)} of {total} results

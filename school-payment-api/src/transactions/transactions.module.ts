@@ -7,6 +7,7 @@ import { TransactionsService } from './transactions.service';
 import { Order, OrderSchema } from '../schemas/order.schema';
 import { OrderStatus, OrderStatusSchema } from '../schemas/order-status.schema';
 import { WebhookLog, WebhookLogSchema } from '../schemas/webhook-log.schema';
+import { TransactionsGateway } from './transactions.gateway'; 
 
 @Module({
   imports: [
@@ -19,6 +20,6 @@ import { WebhookLog, WebhookLogSchema } from '../schemas/webhook-log.schema';
     ConfigModule,
   ],
   controllers: [TransactionsController],
-  providers: [TransactionsService],
+  providers: [TransactionsService, TransactionsGateway],
 })
 export class TransactionsModule {}

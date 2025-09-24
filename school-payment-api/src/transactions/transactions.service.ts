@@ -8,8 +8,9 @@ import * as jwt from 'jsonwebtoken';
 import { Order, OrderDocument } from '../schemas/order.schema';
 import { OrderStatus, OrderStatusDocument } from '../schemas/order-status.schema';
 import { WebhookLog, WebhookLogDocument } from '../schemas/webhook-log.schema';
+import { TransactionsGateway } from './transactions.gateway';
 
-// Interfaces for pagination
+// Interfaces for Mongoose pagination plugin
 interface SimpleAggregatePaginateResult<T> {
   docs: T[];
   totalDocs: number;
@@ -42,10 +43,13 @@ export class TransactionsService {
 
   constructor(
     @InjectModel(Order.name) private orderModel: Model<OrderDocument>,
-    @InjectModel(OrderStatus.name) private orderStatusModel: OrderStatusModelWithPagination,
-    @InjectModel(WebhookLog.name) private webhookLogModel: Model<WebhookLogDocument>,
+    @InjectModel(OrderStatus.name)
+    private orderStatusModel: OrderStatusModelWithPagination,
+    @InjectModel(WebhookLog.name)
+    private webhookLogModel: Model<WebhookLogDocument>,
     private readonly configService: ConfigService,
     private readonly httpService: HttpService,
+    private readonly transactionsGateway: TransactionsGateway, // Injected for real-time updates
   ) {
     this.pgKey = this.configService.get<string>('PG_KEY')!;
     this.pgApiKey = this.configService.get<string>('PG_API_KEY')!;
@@ -63,9 +67,9 @@ export class TransactionsService {
         name: paymentDto.name,
         id: paymentDto.studentId,
         email: paymentDto.email,
-        phone: paymentDto.phone, // Save the phone number
+        phone: paymentDto.phone,
       },
-      gateway_name: 'Easebuzz', 
+      gateway_name: 'Easebuzz',
     });
     await newOrder.save();
 
@@ -75,6 +79,9 @@ export class TransactionsService {
       status: 'Pending',
     });
     await newOrderStatus.save();
+
+    // Notify connected clients that a new transaction has been added
+    this.transactionsGateway.sendUpdate();
 
     const payload = {
       key: this.pgKey,
@@ -134,33 +141,25 @@ export class TransactionsService {
       },
       { new: true },
     );
+    // Notify connected clients that a transaction's status has been updated
+    this.transactionsGateway.sendUpdate();
   }
-
-  // src/transactions/transactions.service.ts
 
   async findAll(params: any): Promise<any> {
     const { page = 1, limit = 10, sort_by, sort_order, status, school_id, q } = params;
 
     const pipeline: any[] = [];
     
-    // This stage filters documents *before* the expensive join operation
     const preLookupMatchStage: any = {};
 
-    // --- THIS IS THE CORRECTED LOGIC ---
-    if (status && status.length > 0) {
-      const statusArray = Array.isArray(status) ? status : [status];
-      // Build an $or query to match any of the statuses case-insensitively
-      preLookupMatchStage.$or = statusArray.map(s => ({
-        status: { $regex: s, $options: 'i' }
-      }));
+    if (status) {
+      preLookupMatchStage.status = { $regex: `^${status}$`, $options: 'i' };
     }
-    // ------------------------------------
 
     if (Object.keys(preLookupMatchStage).length > 0) {
       pipeline.push({ $match: preLookupMatchStage });
     }
     
-    // Join with the 'orders' collection
     pipeline.push(
       {
         $lookup: {
@@ -190,7 +189,6 @@ export class TransactionsService {
       },
     );
 
-    // This stage filters on fields that only exist *after* the join
     const postLookupMatchStage: any = {};
     if (school_id) {
         postLookupMatchStage.school_id = school_id;
