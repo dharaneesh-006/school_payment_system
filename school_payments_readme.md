@@ -14,6 +14,7 @@ This repository contains both the **Frontend Dashboard** and the **Backend API**
 * Modern responsive UI with Tailwind CSS
 * Secure authentication (JWT)
 * Dynamic data table with filtering, sorting, pagination
+* Export button to download the table to Excel Sheet file (i.e .xls)
 * Dark/Light mode support
 * Mobile-friendly navigation
 
@@ -137,12 +138,37 @@ VITE_API_BASE_URL=http://localhost:4000/api
 
 ---
 
+## WEB_SITE Preview 
+
+### Dashboard
+![Dashboard](./screenshots/dashboard.png)
+
 ## 🧪 Testing with Postman
 
 * Import the provided Postman collection: `/postman/SchoolPayments.postman_collection.json`
 * Set environment variable: `baseURL=http://localhost:4000/api`
 * Register/Login to obtain JWT
 * Use the token for testing `/transactions`, `/schools`, etc.
+
+## POSTMAN TESTS ...
+
+### POST/ login
+![Login](./screenshots/login.png)
+
+### POST/ register
+![Register](./screenshots/register.png)
+
+### POST/ create_payment
+![Create Payment](./screenshots/createpayment.png)
+
+### POST/ webhooks
+![WebHooks](./screenshots/webhooks.png)
+
+### GET/ schools
+![Schools](./screenshots/getschools.png)
+
+### GET/ transactions
+![Schools](./screenshots/gettransactions.png)
 
 ---
 
