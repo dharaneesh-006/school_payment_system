@@ -138,7 +138,7 @@ VITE_API_BASE_URL=http://localhost:4000/api
 
 ---
 
-## WEB_SITE Preview 
+## 🌏 WEB_SITE Preview 
 
 ### Dashboard
 ![Dashboard](./screenshots/dashboard.png)
