@@ -14,6 +14,7 @@ This repository contains both the **Frontend Dashboard** and the **Backend API**
 * Modern responsive UI with Tailwind CSS
 * Secure authentication (JWT)
 * Dynamic data table with filtering, sorting, pagination
+* Export button to download the table to Excel Sheet file (i.e .xls)
 * Dark/Light mode support
 * Mobile-friendly navigation
 
